@@ -16,7 +16,7 @@
   -->
 
 <resources>
-    <style name="AppTheme.NoActionBar.TranslucentStatusBar">
+    <style name="Theme.RoomieSample.NoActionBar.TranslucentStatusBar">
         <item name="android:statusBarColor">@color/transparent</item>
     </style>
 </resources>

@@ -20,6 +20,7 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="userImageTint">#A6A6A6</color>
+    <color name="labelText">#8f8f8f</color>
     <color name="transparent">#00000000</color>
     <color name="black_40">#66000000</color>
 </resources>
