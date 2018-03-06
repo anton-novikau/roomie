@@ -120,7 +120,6 @@ public class ContactListActivity extends AppCompatActivity {
         List<ContactEntity> oldContacts = contactListAdapter.getData();
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new ContactDiffCallback(oldContacts, contacts));
         contactListAdapter.setData(contacts);
-        contactListAdapter.notifyDataSetChanged();
         diff.dispatchUpdatesTo(contactListAdapter);
     }
 
