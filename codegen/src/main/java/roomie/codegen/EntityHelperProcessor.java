@@ -66,6 +66,7 @@ import roomie.codegen.util.TypeMapping;
 public class EntityHelperProcessor extends BaseAnnotationProcessor {
     private static final String ENTITY_HELPER_POSTFIX = "Helper";
     private static final String DB_HELPER_CLASS_NAME = "RoomieDatabaseHelper";
+    private static final String DB_HELPER_PACKAGE_KEY = "roomie.dbHelperPackage";
 
     private String databaseHelperPackage;
 
@@ -73,7 +74,8 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
 
-        databaseHelperPackage = processingEnv.getOptions().get("roomie.dbHelperPackage");
+        String defaultHelperPackage = Entity.class.getPackage().toString();
+        databaseHelperPackage = processingEnv.getOptions().getOrDefault(DB_HELPER_PACKAGE_KEY, defaultHelperPackage);
     }
 
     @Override
@@ -113,10 +115,6 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
 
     private void generateDatabaseHelper(List<ClassName> helpers) {
         TypeSpec dbHelperContent = generateDatabaseHelperClass(helpers);
-
-        if (StringUtils.isEmpty(databaseHelperPackage)) {
-            databaseHelperPackage = Entity.class.getPackage().toString();
-        }
 
         writeSourceFile(DB_HELPER_CLASS_NAME, databaseHelperPackage, dbHelperContent, null);
     }
