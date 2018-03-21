@@ -20,8 +20,6 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     compileOnly "com.android.tools.lint:lint-api:26.0.1"
     compileOnly "com.android.tools.lint:lint-checks:26.0.1"
-
-    compileOnly project(':api')
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
