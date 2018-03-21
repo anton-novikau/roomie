@@ -21,13 +21,23 @@ import javax.lang.model.element.Element;
 
 import roomie.codegen.util.Logger;
 
-public class AbortProcessingException extends RuntimeException {
+public class AbortProcessingException extends Exception {
 
-    public AbortProcessingException(String message) {
-        super(message);
+    private final Element associatedElement;
+
+    public AbortProcessingException(Element associatedElement, String message, Object... args) {
+        super(String.format(message, args));
+
+        this.associatedElement = associatedElement;
     }
 
-    public AbortProcessingException(Logger logger, Element e, String msg, Object... args) {
-        this(logger.error(e, msg, args));
+    public AbortProcessingException(Throwable cause, Element associatedElement, String message, Object... args) {
+        super(String.format(message, args), cause);
+
+        this.associatedElement = associatedElement;
+    }
+
+    public Element getAssociatedElement() {
+        return associatedElement;
     }
 }

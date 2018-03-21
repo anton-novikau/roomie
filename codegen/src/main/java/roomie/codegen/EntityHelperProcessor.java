@@ -38,6 +38,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
+import javax.annotation.processing.SupportedOptions;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
@@ -63,10 +64,12 @@ import roomie.codegen.util.TypeMapping;
 @AutoService(Processor.class)
 @SupportedAnnotationTypes("roomie.api.Entity")
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedOptions(EntityHelperProcessor.DB_HELPER_PACKAGE_KEY)
 public class EntityHelperProcessor extends BaseAnnotationProcessor {
+    static final String DB_HELPER_PACKAGE_KEY = "roomie.dbHelperPackage";
+
     private static final String ENTITY_HELPER_POSTFIX = "Helper";
     private static final String DB_HELPER_CLASS_NAME = "RoomieDatabaseHelper";
-    private static final String DB_HELPER_PACKAGE_KEY = "roomie.dbHelperPackage";
 
     private String databaseHelperPackage;
 
@@ -79,8 +82,10 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
     }
 
     @Override
-    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        Set<? extends Element> annotatedClasses = roundEnv.getElementsAnnotatedWith(Entity.class);
+    public boolean process(Set<? extends TypeElement> annotations,
+            RoundEnvironment roundEnv) {
+        Set<? extends Element> annotatedClasses =
+                roundEnv.getElementsAnnotatedWith(Entity.class);
         if (annotatedClasses.isEmpty()) {
             return true; // early exit
         }
@@ -88,32 +93,42 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
         List<ClassName> helpers = new ArrayList<>(annotatedClasses.size());
         for (Element element : annotatedClasses) {
             if (element.getKind() != ElementKind.CLASS) {
-                throw new AbortProcessingException(
-                        mLogger.error(element,
-                                "%s can be applied only to classes",
-                                Entity.class.getSimpleName()));
+                logger.error(element,
+                        "%s can be applied only to classes",
+                        Entity.class.getSimpleName());
+                continue;
             }
+
             TypeElement type = (TypeElement) element;
+
             if (type.getModifiers().contains(Modifier.PRIVATE)) {
-                throw new AbortProcessingException(
-                        mLogger.error(type,"Entity can't be a private class"));
+                logger.error(type,"Entity can't be a private class");
+                continue;
             }
 
             String packageName = getPackageName(element);
             String className = type.getSimpleName() + ENTITY_HELPER_POSTFIX;
             helpers.add(ClassName.get(packageName, className));
 
-            TypeSpec fileContent = generateEntityClass(type, className);
+            try {
+                TypeSpec fileContent = generateEntityClass(type, className);
 
-            writeSourceFile(className, packageName, fileContent, type);
+                writeSourceFile(className, packageName, fileContent, type);
+            } catch (AbortProcessingException e) {
+                logger.error(e.getAssociatedElement(), e.getMessage());
+            }
         }
 
-        generateDatabaseHelper(helpers);
+        try {
+            generateDatabaseHelper(helpers);
+        } catch (AbortProcessingException e) {
+            logger.error(e.getAssociatedElement(), e.getMessage());
+        }
 
         return true;
     }
 
-    private void generateDatabaseHelper(List<ClassName> helpers) {
+    private void generateDatabaseHelper(List<ClassName> helpers) throws AbortProcessingException {
         TypeSpec dbHelperContent = generateDatabaseHelperClass(helpers);
 
         writeSourceFile(DB_HELPER_CLASS_NAME, databaseHelperPackage, dbHelperContent, null);
@@ -165,7 +180,7 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
         return method.build();
     }
 
-    private TypeSpec generateEntityClass(TypeElement annotatedClass, String className) {
+    private TypeSpec generateEntityClass(TypeElement annotatedClass, String className) throws AbortProcessingException {
         TypeSpec.Builder classBuilder = TypeSpec.classBuilder(className);
         classBuilder.addModifiers(Modifier.PUBLIC);
         classBuilder.addSuperinterface(ParameterizedTypeName.get(ClassName.get(EntityHelper.class), ClassName.get(annotatedClass)));
@@ -185,7 +200,8 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
         return classBuilder.build();
     }
 
-    private FieldSpec generateCreateTableStatement(TypeElement type, EntityMetadata metadata) {
+    private FieldSpec generateCreateTableStatement(TypeElement type, EntityMetadata metadata)
+            throws AbortProcessingException {
         FieldSpec.Builder createStmt = FieldSpec.builder(ClassName.get(String.class),
                 "CREATE_STATEMENT",
                 Modifier.PUBLIC,
@@ -405,7 +421,7 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
         return method.build();
     }
 
-    private MethodSpec generateReadData(TypeElement type, EntityMetadata metadata) {
+    private MethodSpec generateReadData(TypeElement type, EntityMetadata metadata) throws AbortProcessingException {
         MethodSpec.Builder method = MethodSpec.methodBuilder("loadFromCursor");
         method.addModifiers(Modifier.PRIVATE, Modifier.STATIC);
         method.addParameter(ClassName.get(type), "entity");
@@ -418,7 +434,7 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
             VariableElement column = columns.get(i);
             TypeName typeAdapter = getTypeAdapter(column);
             if (typeAdapter == null) {
-                throw new AbortProcessingException(mLogger,
+                throw new AbortProcessingException(
                         column,
                         "%s has unsupported type %s for saving to database",
                         column.getSimpleName(), column.asType());
@@ -433,7 +449,7 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
         return method.build();
     }
 
-    private MethodSpec generateWriteData(TypeElement type, EntityMetadata metadata) {
+    private MethodSpec generateWriteData(TypeElement type, EntityMetadata metadata) throws AbortProcessingException {
         MethodSpec.Builder method = MethodSpec.methodBuilder("toContentValues");
         method.addModifiers(Modifier.PRIVATE, Modifier.STATIC);
         method.addParameter(ClassName.get(type), "entity");
@@ -447,7 +463,7 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
         for (VariableElement column : columns) {
             TypeName typeAdapter = getTypeAdapter(column);
             if (typeAdapter == null) {
-                throw new AbortProcessingException(mLogger,
+                throw new AbortProcessingException(
                         column,
                         "%s has unsupported type %s for saving to database",
                         column.getSimpleName(), column.asType());
@@ -471,7 +487,7 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
         return method.build();
     }
 
-    private EntityMetadata obtainEntityMetadata(TypeElement annotatedClass) {
+    private EntityMetadata obtainEntityMetadata(TypeElement annotatedClass) throws AbortProcessingException {
         Entity entityAnnotation = annotatedClass.getAnnotation(Entity.class);
         EntityMetadata metadata = new EntityMetadata(entityAnnotation.table());
 
@@ -486,20 +502,20 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
             }
 
             if (element.getModifiers().contains(Modifier.PRIVATE)) {
-                mLogger.warn(element, "%s is private. Skip column data", element.getSimpleName());
+                logger.warn(element, "%s is private. Skip column data", element.getSimpleName());
                 continue;
             }
 
             VariableElement field = (VariableElement) element;
             if (field.getAnnotation(PrimaryKey.class) != null) {
                 if (!TypeName.LONG.equals(TypeName.get(field.asType()))) {
-                    throw new AbortProcessingException(mLogger,
+                    throw new AbortProcessingException(
                             field,
                             "Primary key %s can be only a long type",
                             field.getSimpleName());
                 }
                 if (metadata.getPrimaryKey() != null) {
-                    throw new AbortProcessingException(mLogger,
+                    throw new AbortProcessingException(
                             annotatedClass,
                             "Entity %s must have only one primary key defined",
                             annotatedClass.getSimpleName());
@@ -511,7 +527,7 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
         }
 
         if (!metadata.isValid()) {
-            throw new AbortProcessingException(mLogger,
+            throw new AbortProcessingException(
                     annotatedClass,
                     "Invalid entity %s found. No primary key or empty table name defined",
                     annotatedClass.getSimpleName());
@@ -557,7 +573,7 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
     }
 
     @DatabaseType
-    private String getDatabaseType(VariableElement field) {
+    private String getDatabaseType(VariableElement field) throws AbortProcessingException {
         Column columnAnnotation = field.getAnnotation(Column.class);
 
         @DatabaseType
@@ -565,7 +581,7 @@ public class EntityHelperProcessor extends BaseAnnotationProcessor {
         if (StringUtils.isEmpty(databaseType)) {
             databaseType = TypeMapping.findDatabaseType(TypeName.get(field.asType()));
             if (StringUtils.isEmpty(databaseType)) {
-                throw new AbortProcessingException(mLogger,
+                throw new AbortProcessingException(
                         field,
                         "Unknown database type for column field %s of type %s",
                         field,

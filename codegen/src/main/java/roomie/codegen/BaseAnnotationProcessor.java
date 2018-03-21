@@ -27,6 +27,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.util.Elements;
 import javax.tools.JavaFileObject;
 
 import roomie.codegen.util.Logger;
@@ -36,23 +37,22 @@ public abstract class BaseAnnotationProcessor extends AbstractProcessor {
     protected static final String DEFAULT_INDENTATION = "    ";
     protected static final String DEFAULT_FILE_COMMENT = "Code generated from $L. Do not modify!";
 
-    protected Logger mLogger;
+    protected Logger logger;
+    protected Elements elementUtils;
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
-        mLogger = new Logger(processingEnv.getMessager());
+        logger = new Logger(processingEnv.getMessager());
+        elementUtils = processingEnv.getElementUtils();
     }
 
     protected String getPackageName(Element type) {
-        Element enclosingElement = type.getEnclosingElement();
-        if (enclosingElement.getKind() != ElementKind.PACKAGE) {
-            return getPackageName(enclosingElement);
-        }
-        return ((PackageElement) enclosingElement).getQualifiedName().toString();
+        return elementUtils.getPackageOf(type).getQualifiedName().toString();
     }
 
-    protected void writeSourceFile(String className, String packageName, TypeSpec classContent, Element originatingElement) {
+    protected void writeSourceFile(String className, String packageName, TypeSpec classContent,
+            Element originatingElement) throws AbortProcessingException {
         try {
             String qualifiedName = toQualifiedName(packageName, className);
             JavaFile javaFile = JavaFile.builder(packageName, classContent)
@@ -64,12 +64,11 @@ public abstract class BaseAnnotationProcessor extends AbstractProcessor {
                 writer.write(javaFile.toString());
             }
         } catch (IOException e) {
-            String message = mLogger.error(
+            throw new AbortProcessingException(e,
                     originatingElement,
                     "Could not write generated class %s: %s",
                     className,
                     e);
-            throw new AbortProcessingException(message);
         }
     }
 

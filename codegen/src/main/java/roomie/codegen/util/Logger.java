@@ -29,21 +29,18 @@ public class Logger {
         mMessager = messager;
     }
 
-    public String error(Element element, String msg, Object... args) {
+    public void error(Element element, String msg, Object... args) {
         String message = String.format(msg, args);
         mMessager.printMessage(Diagnostic.Kind.ERROR, message, element);
-        return message;
     }
 
-    public String warn(Element element, String msg, Object... args) {
+    public void warn(Element element, String msg, Object... args) {
         String message = String.format(msg, args);
         mMessager.printMessage(Diagnostic.Kind.WARNING, message, element);
-        return message;
     }
 
-    public String info(Element element, String msg, Object... args) {
+    public void info(Element element, String msg, Object... args) {
         String message = String.format(msg, args);
         mMessager.printMessage(Diagnostic.Kind.NOTE, message, element);
-        return message;
     }
 }
