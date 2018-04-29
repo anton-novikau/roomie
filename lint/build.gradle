@@ -18,8 +18,8 @@ apply plugin: 'java-library'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    compileOnly "com.android.tools.lint:lint-api:26.0.1"
-    compileOnly "com.android.tools.lint:lint-checks:26.0.1"
+    compileOnly "com.android.tools.lint:lint-api:$lint_version"
+    compileOnly "com.android.tools.lint:lint-checks:$lint_version"
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8

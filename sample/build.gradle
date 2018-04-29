@@ -17,11 +17,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion project.compile_sdk_version
+    buildToolsVersion project.build_tools_version
     defaultConfig {
         applicationId 'roomie.sample'
-        minSdkVersion 17
-        targetSdkVersion 27
+        minSdkVersion project.min_sdk_version
+        targetSdkVersion project.target_sdk_version
         versionCode 1
         versionName "1.0"
 
@@ -56,19 +57,19 @@ dependencies {
     lintChecks project(':lint')
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.android.support:appcompat-v7:27.1.0'
-    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
-    implementation 'com.android.support:design:27.1.0'
-    implementation 'com.github.bumptech.glide:glide:4.5.0'
-    implementation 'io.reactivex.rxjava2:rxandroid:2.0.1'
-    implementation 'io.reactivex.rxjava2:rxjava:2.1.8'
-    implementation 'com.google.code.gson:gson:2.8.2'
-    implementation 'com.squareup.okhttp3:okhttp:3.9.1'
+    implementation "com.android.support:appcompat-v7:$support_version"
+    implementation "com.android.support.constraint:constraint-layout:$constraint_layout_version"
+    implementation "com.android.support:design:$support_version"
+    implementation "com.github.bumptech.glide:glide:$glide_version"
+    implementation "io.reactivex.rxjava2:rxandroid:$rxandroid_version"
+    implementation "io.reactivex.rxjava2:rxjava:$rxjava_version"
+    implementation "com.google.code.gson:gson:$gson_version"
+    implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
 
     // code generators
     implementation project(':api')
     annotationProcessor project(':codegen')
 
     // unit tests
-    testImplementation 'junit:junit:4.12'
+    testImplementation "junit:junit:$junit_version"
 }
