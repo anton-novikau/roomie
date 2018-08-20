@@ -25,12 +25,12 @@ buildscript {
 
     // libraries
     ext.support_version = '27.1.1'
-    ext.constraint_layout_version = '1.1.0'
-    ext.rxjava_version = '2.1.13'
-    ext.rxandroid_version = '2.0.1'
-    ext.glide_version = '4.5.0'
-    ext.gson_version = '2.8.2'
-    ext.okhttp_version = '3.9.1'
+    ext.constraint_layout_version = '1.1.2'
+    ext.rxjava_version = '2.2.0'
+    ext.rxandroid_version = '2.1.0'
+    ext.glide_version = '4.7.1'
+    ext.gson_version = '2.8.5'
+    ext.okhttp_version = '3.11.0'
 
     // unit tests
     ext.junit_version = '4.12'
@@ -43,7 +43,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.2'
+        classpath 'com.android.tools.build:gradle:3.1.4'
         
 
         // NOTE: Do not place your application dependencies here; they belong
